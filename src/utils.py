@@ -1,15 +1,13 @@
 import json
 import logging
 import os
-
-import pandas as pd
 from datetime import datetime
 
+import pandas as pd
 import requests
 from dotenv import load_dotenv
 
 from get_from_csv_xlsx import get_transactions_xlsx
-
 
 log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
 os.makedirs(log_dir, exist_ok=True)
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 log_file_path = os.path.join(log_dir, "utils.log")
-file_handler = logging.FileHandler(log_file_path,"w", encoding="utf-8")
+file_handler = logging.FileHandler(log_file_path, "w", encoding="utf-8")
 
 file_formatter = logging.Formatter("%(asctime)s - %(filename)s - %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
@@ -78,6 +76,7 @@ def get_transactions_from_file():
 
             # Проверяем наличие нужных для вывода значений в словарях
             if not isinstance(transaction, dict):
+                logger.warning("Нет данных для вывода")
                 continue
 
             if date_operation and (isinstance(date_operation, str)):
@@ -115,18 +114,16 @@ def get_number_of_card_amount_cashback(transactions):
 
         # Группируем данные по номеру карты
         card_number_grouped = df_ok.groupby("Номер карты")
+        # Суммируем расходы по каждой карте, преобразуем в положительное число
         card_amount_sum = abs(round(card_number_grouped["Сумма операции"].sum(), 2))
+        # получаем кэшбэк
         cashback = round(card_amount_sum / 100, 2)
 
         results = []
         cards_dict_cashback = cashback.to_dict()
 
         for card, total in card_amount_sum.items():
-            result_dict = {
-                "last_digits": card,
-                "total_spent": total,
-                "cashback": cards_dict_cashback[card]
-            }
+            result_dict = {"last_digits": card, "total_spent": total, "cashback": cards_dict_cashback[card]}
             results.append(result_dict)
 
         return results
@@ -137,7 +134,7 @@ def get_number_of_card_amount_cashback(transactions):
 
 
 def get_top_5_of_transactions(transactions):
-    """ Выводит 5 транзакций с самой большой суммой платежа """
+    """Выводит 5 транзакций с самой большой суммой платежа"""
 
     if not transactions:
         logger.error("Список транзакций пуст.")
@@ -155,11 +152,11 @@ def get_top_5_of_transactions(transactions):
 
         for index, item in enumerate(sorted_transactions):
             while index <= 4:
-                result[f'{index + 1}'] = {
+                result[f"{index + 1}"] = {
                     "date": item["Дата операции"],
                     "amount": item["Сумма платежа"],
                     "category": item["Категория"],
-                    "description": item["Описание"]
+                    "description": item["Описание"],
                 }
                 break
 
@@ -175,10 +172,10 @@ def get_top_5_of_transactions(transactions):
 
 
 def get_currency_rate():
-    """ Получает курс валют """
+    """Получает курс валют"""
     with open("../coursework_1/user_settings.json", "r", encoding="utf-8") as json_file:
         currencies_data = json.load(json_file)
-        currencies = currencies_data['user_currencies']
+        currencies = currencies_data["user_currencies"]
 
     load_dotenv(".env")
     apikey = os.getenv("apikey")
@@ -193,10 +190,7 @@ def get_currency_rate():
     for currency in currencies:
         url = f"https://api.apilayer.com/exchangerates_data/convert?to=RUB&from={currency}&amount=1"
 
-        headers = {
-            "apikey": apikey,
-            "Content-Type": "application/json"
-        }
+        headers = {"apikey": apikey, "Content-Type": "application/json"}
 
         response = requests.get(url, headers=headers)
 
@@ -223,17 +217,14 @@ def get_currency_rate():
             rates[currency] = 0.0
 
     for key, value in rates.items():
-        rates_dict = {
-            "currency": key,
-            "rate": value
-        }
+        rates_dict = {"currency": key, "rate": value}
         result_rates.append(rates_dict)
 
     return result_rates
 
 
 def get_stocks_price():
-    """ Получает стоимость акций """
+    """Получает стоимость акций"""
     with open("../coursework_1/user_settings.json", "r", encoding="utf-8") as json_file:
         stocks_list = json.load(json_file)
         stocks = stocks_list["user_stocks"]
@@ -276,10 +267,7 @@ def get_stocks_price():
             stocks_prices[stock] = 0.0
 
     for key, value in stocks_prices.items():
-        result_dict = {
-            "stock": key,
-            "price": value
-        }
+        result_dict = {"stock": key, "price": value}
         stocks_prices_result.append(result_dict)
 
     return stocks_prices_result
