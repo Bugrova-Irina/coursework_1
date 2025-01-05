@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import pandas as pd
@@ -10,14 +11,18 @@ from dotenv import load_dotenv
 from get_from_csv_xlsx import get_transactions_xlsx
 
 
-# def get_last_date_of_period():
-#     """Получаем конечную дату временного периода для выборки транзакций"""
-#     current_date = str(input("""
-#             Введите дату в диапазоне от 01.01.2018 до 31.12.2021
-#             в формате 03.12.2021 22:24:47
-#             """))
-#
-#     return current_date
+log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
+os.makedirs(log_dir, exist_ok=True)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
+log_file_path = os.path.join(log_dir, "utils.log")
+file_handler = logging.FileHandler(log_file_path,"w", encoding="utf-8")
+
+file_formatter = logging.Formatter("%(asctime)s - %(filename)s - %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
 
 
 def get_greeting(date):
@@ -25,26 +30,30 @@ def get_greeting(date):
     Выдает приветствие пользователю в зависимости от времени
     в конечной дате временного периода
     """
-    # current_date = str(input("""
-    #     Введите дату в диапазоне от 01.01.2018 до 31.12.2021
-    #     в формате 03.12.2021 22:24:47
-    #     """))
 
-    # Получаем время для приветствия
-    time_of_last_transaction = int(date[-8:-6])
-    # print(time_of_last_transaction)
+    if not date:
+        logging.error("Не задано время")
+        raise Exception("Не задано время")
 
-    if 0 <= time_of_last_transaction < 6:
-        return "Доброй ночи"
+    try:
+        # Получаем время для приветствия
+        time_of_last_transaction = int(date[-8:-6])
+        # print(time_of_last_transaction)
 
-    elif 6 <= time_of_last_transaction < 12:
-        return "Доброе утро"
+        if 0 <= time_of_last_transaction < 6:
+            return "Доброй ночи"
 
-    elif 12 <= time_of_last_transaction < 18:
-        return "Добрый день"
+        elif 6 <= time_of_last_transaction < 12:
+            return "Доброе утро"
 
-    else:
-        return "Добрый вечер"
+        elif 12 <= time_of_last_transaction < 18:
+            return "Добрый день"
+
+        else:
+            return "Добрый вечер"
+    except ValueError as ex:
+        logging.error(f"Задана некорректная дата: {ex}")
+        print(f"Задана некорректная дата: {ex}")
 
 
 def get_transactions_from_file():
@@ -83,10 +92,11 @@ def get_transactions_from_file():
             return transactions_list
 
         else:
-            print("Список транзакций пуст.")
+            logger.error("Список транзакций пуст.")
             return None
 
     except Exception as ex:
+        logger.error(f"Произошла ошибка: {ex}")
         print(f"Произошла ошибка: {ex}")
 
 
@@ -95,55 +105,73 @@ def get_number_of_card_amount_cashback(transactions):
     Выводит последние 4 цифры каждой карты из списка транзакций,
     сумму расходов и сумму кэшбэка по каждой карте
     """
+    if not transactions:
+        logger.error("Список транзакций пуст.")
+        raise ValueError("Список транзакций пуст.")
 
-    df = pd.DataFrame(transactions)
-    df_ok = df.loc[(df["Статус"] == "OK") & (df["Сумма операции"] < 0)]
+    try:
+        df = pd.DataFrame(transactions)
+        df_ok = df.loc[(df["Статус"] == "OK") & (df["Сумма операции"] < 0)]
 
-    # Группируем данные по номеру карты
-    card_number_grouped = df_ok.groupby("Номер карты")
-    card_amount_sum = abs(round(card_number_grouped["Сумма операции"].sum(), 2))
-    cashback = round(card_amount_sum / 100, 2)
+        # Группируем данные по номеру карты
+        card_number_grouped = df_ok.groupby("Номер карты")
+        card_amount_sum = abs(round(card_number_grouped["Сумма операции"].sum(), 2))
+        cashback = round(card_amount_sum / 100, 2)
 
-    results = []
-    cards_dict_cashback = cashback.to_dict()
+        results = []
+        cards_dict_cashback = cashback.to_dict()
 
-    for card, total in card_amount_sum.items():
-        result_dict = {
-            "last_digits": card,
-            "total_spent": total,
-            "cashback": cards_dict_cashback[card]
-        }
-        results.append(result_dict)
+        for card, total in card_amount_sum.items():
+            result_dict = {
+                "last_digits": card,
+                "total_spent": total,
+                "cashback": cards_dict_cashback[card]
+            }
+            results.append(result_dict)
 
-    return results
+        return results
+
+    except ValueError as ex:
+        logging.error(f"Некорректные исходные данные: {ex}")
+        print(f"Некорректные исходные данные: {ex}")
 
 
 def get_top_5_of_transactions(transactions):
     """ Выводит 5 транзакций с самой большой суммой платежа """
-    df = pd.DataFrame(transactions)
-    df_ok = df.loc[(df["Статус"] == "OK") & (df["Сумма операции"] < 0)]
 
-    # Получаем отсортированный по сумме платежа список транзакций
-    sorted_df_ok = df_ok.sort_values(by="Сумма платежа")
-    sorted_transactions = sorted_df_ok.to_dict(orient="records")
+    if not transactions:
+        logger.error("Список транзакций пуст.")
+        raise ValueError("Список транзакций пуст.")
 
-    result = dict()
+    try:
+        df = pd.DataFrame(transactions)
+        df_ok = df.loc[(df["Статус"] == "OK") & (df["Сумма операции"] < 0)]
 
-    for index, item in enumerate(sorted_transactions):
-        while index <= 4:
-            result[f'{index + 1}'] = {
-                "date": item["Дата операции"],
-                "amount": item["Сумма платежа"],
-                "category": item["Категория"],
-                "description": item["Описание"]
-            }
-            break
+        # Получаем отсортированный по сумме платежа список транзакций
+        sorted_df_ok = df_ok.sort_values(by="Сумма платежа")
+        sorted_transactions = sorted_df_ok.to_dict(orient="records")
 
-    top_transactions = []
-    for key in result.keys():
-        top_transactions.append(result[key])
+        result = dict()
 
-    return top_transactions
+        for index, item in enumerate(sorted_transactions):
+            while index <= 4:
+                result[f'{index + 1}'] = {
+                    "date": item["Дата операции"],
+                    "amount": item["Сумма платежа"],
+                    "category": item["Категория"],
+                    "description": item["Описание"]
+                }
+                break
+
+        top_transactions = []
+        for key in result.keys():
+            top_transactions.append(result[key])
+
+        return top_transactions
+
+    except ValueError as ex:
+        logging.error(f"Некорректные исходные данные: {ex}")
+        print(f"Некорректные исходные данные: {ex}")
 
 
 def get_currency_rate():
@@ -156,6 +184,7 @@ def get_currency_rate():
     apikey = os.getenv("apikey")
 
     if not apikey:
+        logger.error("API ключ не найден. Проверьте файл .env")
         raise ValueError("API ключ не найден. Проверьте файл .env")
 
     rates = {}
@@ -172,6 +201,7 @@ def get_currency_rate():
         response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
+            logger.error(f"Ошибка API: {response.status_code}")
             raise ValueError(f"Ошибка API: {response.status_code}")
 
         # status_code = response.status_code
@@ -188,6 +218,7 @@ def get_currency_rate():
             rates[currency] = round(rate, 2)
 
         except ValueError:
+            logger.error("Ошибка при парсинге JSON ответа.")
             print("Ошибка при парсинге JSON ответа.")
             rates[currency] = 0.0
 
@@ -213,6 +244,7 @@ def get_stocks_price():
     # print(apikey)
 
     if not apikey:
+        logger.error("API ключ не найден. Проверьте файл .env")
         raise ValueError("API ключ не найден. Проверьте файл .env")
 
     stocks_prices = {}
@@ -230,6 +262,7 @@ def get_stocks_price():
 
         if response.status_code != 200:
             print(f"Ответ сервера: {response.text}")
+            logger.error(f"Ошибка API: {response.status_code}")
             raise ValueError(f"Ошибка API: {response.status_code}")
 
         try:
@@ -238,6 +271,7 @@ def get_stocks_price():
             stocks_prices[stock] = price
             # print(response.text)
         except ValueError:
+            logger.error("Ошибка при парсинге JSON ответа")
             print("Ошибка при парсинге JSON ответа")
             stocks_prices[stock] = 0.0
 
