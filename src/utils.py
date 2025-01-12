@@ -103,12 +103,20 @@ def get_number_of_card_amount_cashback(transactions):
     Выводит последние 4 цифры каждой карты из списка транзакций,
     сумму расходов и сумму кэшбэка по каждой карте
     """
-    if transactions.empty:
+    if isinstance(transactions, list):
+        df = pd.DataFrame(transactions)
+    elif isinstance(transactions, pd.DataFrame):
+        df = transactions
+        print(df)
+    else:
+        logger.error("Неверный тип входных данных. Ожидался список или DataFrame")
+        raise ValueError("Неверный тип входных данных. Ожидался список или DataFrame")
+
+    if df.empty:
         logger.error("Список транзакций пуст.")
         raise ValueError("Список транзакций пуст.")
 
     try:
-        df = pd.DataFrame(transactions)
         df_ok = df.loc[(df["Статус"] == "OK") & (df["Сумма операции"] < 0)]
 
         # Группируем данные по номеру карты
@@ -135,7 +143,16 @@ def get_number_of_card_amount_cashback(transactions):
 def get_top_5_of_transactions(transactions):
     """Выводит 5 транзакций с самой большой суммой платежа"""
 
-    if transactions.empty:
+    if isinstance(transactions, list):
+        df = pd.DataFrame(transactions)
+    elif isinstance(transactions, pd.DataFrame):
+        df = transactions
+        print(df)
+    else:
+        logger.error("Неверный тип входных данных. Ожидался список или DataFrame")
+        raise ValueError("Неверный тип входных данных. Ожидался список или DataFrame")
+
+    if df.empty:
         logger.error("Список транзакций пуст.")
         raise ValueError("Список транзакций пуст.")
 
@@ -259,7 +276,7 @@ def get_stocks_price():
             json_response = response.json()
             price = json_response.get("price", 0)
             stocks_prices[stock] = price
-            print(response.text)
+            # print(response.text)
         except ValueError:
             logger.error("Ошибка при парсинге JSON ответа")
             print("Ошибка при парсинге JSON ответа")
