@@ -28,8 +28,9 @@ def main(date):
 
     try:
         greeting = get_greeting(date)
-        cards = get_number_of_card_amount_cashback(get_transactions_from_file())
-        top_transactions = get_top_5_of_transactions(get_transactions_from_file())
+        last_date = "06.06.2018 20:52:16"
+        cards = get_number_of_card_amount_cashback(get_transactions_from_file(last_date))
+        top_transactions = get_top_5_of_transactions(get_transactions_from_file(last_date))
         currency_rates = get_currency_rate()
         stock_prices = get_stocks_price()
 

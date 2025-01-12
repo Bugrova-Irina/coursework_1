@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+from numpy import nan
 
 from get_from_csv_xlsx import get_transactions_xlsx
 
@@ -25,7 +26,7 @@ logger.addHandler(file_handler)
 
 def get_greeting(date):
     """
-    Выдает приветствие пользователю в зависимости от времени
+    Выдает приветствие пользователю в зависимости от времени, указанного
     в конечной дате временного периода
     """
 
@@ -49,27 +50,25 @@ def get_greeting(date):
 
         else:
             return "Добрый вечер"
-    except ValueError as ex:
+    except (ValueError, IndexError) as ex:
         logging.error(f"Задана некорректная дата: {ex}")
-        print(f"Задана некорректная дата: {ex}")
+        raise ValueError(f"Задана некорректная дата: {ex}")
 
 
-def get_transactions_from_file():
+def get_transactions_from_file(last_date):
     """Получает список транзакций за выбранный период"""
 
-    last_date = "06.06.2018 20:52:16"
-
     # Получаем начальную дату периода, в котором будут обрабатываться транзакции
-    date_list = ["01.", "06.06.2018 20:52:16"[3:11], "00:00:00"]
+    date_list = ["01.", last_date[3:11], "00:00:00"]
     first_date = "".join(date_list)
     # print(date_of_first_transaction)
 
+    transactions = get_transactions_xlsx("../coursework_1/data/operations.xlsx")
+    # print(transactions)
     transactions_list = []
     try:
         first_date = datetime.strptime(first_date, "%d.%m.%Y %H:%M:%S")
         last_date = datetime.strptime(last_date, "%d.%m.%Y %H:%M:%S")
-
-        transactions = get_transactions_xlsx("../coursework_1/data/operations.xlsx")
 
         for transaction in transactions:
             date_operation = transaction.get("Дата операции")
@@ -104,7 +103,7 @@ def get_number_of_card_amount_cashback(transactions):
     Выводит последние 4 цифры каждой карты из списка транзакций,
     сумму расходов и сумму кэшбэка по каждой карте
     """
-    if not transactions:
+    if transactions.empty:
         logger.error("Список транзакций пуст.")
         raise ValueError("Список транзакций пуст.")
 
@@ -128,7 +127,7 @@ def get_number_of_card_amount_cashback(transactions):
 
         return results
 
-    except ValueError as ex:
+    except (ValueError, KeyError) as ex:
         logging.error(f"Некорректные исходные данные: {ex}")
         print(f"Некорректные исходные данные: {ex}")
 
@@ -136,7 +135,7 @@ def get_number_of_card_amount_cashback(transactions):
 def get_top_5_of_transactions(transactions):
     """Выводит 5 транзакций с самой большой суммой платежа"""
 
-    if not transactions:
+    if transactions.empty:
         logger.error("Список транзакций пуст.")
         raise ValueError("Список транзакций пуст.")
 
@@ -166,7 +165,7 @@ def get_top_5_of_transactions(transactions):
 
         return top_transactions
 
-    except ValueError as ex:
+    except (ValueError, KeyError) as ex:
         logging.error(f"Некорректные исходные данные: {ex}")
         print(f"Некорректные исходные данные: {ex}")
 
@@ -260,7 +259,7 @@ def get_stocks_price():
             json_response = response.json()
             price = json_response.get("price", 0)
             stocks_prices[stock] = price
-            # print(response.text)
+            print(response.text)
         except ValueError:
             logger.error("Ошибка при парсинге JSON ответа")
             print("Ошибка при парсинге JSON ответа")
@@ -274,11 +273,98 @@ def get_stocks_price():
 
 
 if __name__ == "__main__":
+    data_trans = [
+        {
+            "Дата операции": "04.06.2018 17:33:19",
+            "Дата платежа": "04.06.2018",
+            "Номер карты": "*1112",
+            "Статус": "FAILED",
+            "Сумма операции": -4003.54,
+            "Валюта операции": "RUB",
+            "Сумма платежа": -4003.54,
+            "Валюта платежа": "RUB",
+            "Кэшбэк": nan,
+            "Категория": nan,
+            "MCC": nan,
+            "Описание": "Перевод с карты",
+            "Бонусы (включая кэшбэк)": 0,
+            "Округление на инвесткопилку": 0,
+            "Сумма операции с округлением": 4003.54,
+        },
+        {
+            "Дата операции": "03.06.2018 21:38:23",
+            "Дата платежа": "03.06.2018",
+            "Номер карты": "*5441",
+            "Статус": "FAILED",
+            "Сумма операции": -1000.0,
+            "Валюта операции": "RUB",
+            "Сумма платежа": -1000.0,
+            "Валюта платежа": "RUB",
+            "Кэшбэк": nan,
+            "Категория": nan,
+            "MCC": nan,
+            "Описание": "Перевод с карты",
+            "Бонусы (включая кэшбэк)": 0,
+            "Округление на инвесткопилку": 0,
+            "Сумма операции с округлением": 1000.0,
+        },
+        {
+            "Дата операции": "03.06.2018 14:19:08",
+            "Дата платежа": "03.06.2018",
+            "Номер карты": nan,
+            "Статус": "OK",
+            "Сумма операции": -22000.0,
+            "Валюта операции": "RUB",
+            "Сумма платежа": -22000.0,
+            "Валюта платежа": "RUB",
+            "Кэшбэк": nan,
+            "Категория": "Переводы",
+            "MCC": nan,
+            "Описание": "Константин Ф.",
+            "Бонусы (включая кэшбэк)": 0,
+            "Округление на инвесткопилку": 0,
+            "Сумма операции с округлением": 22000.0,
+        },
+        {
+            "Дата операции": "03.06.2018 10:23:52",
+            "Дата платежа": "05.06.2018",
+            "Номер карты": "*7197",
+            "Статус": "OK",
+            "Сумма операции": -512.95,
+            "Валюта операции": "RUB",
+            "Сумма платежа": -512.95,
+            "Валюта платежа": "RUB",
+            "Кэшбэк": nan,
+            "Категория": "Супермаркеты",
+            "MCC": 5411.0,
+            "Описание": "SPAR",
+            "Бонусы (включая кэшбэк)": 10,
+            "Округление на инвесткопилку": 0,
+            "Сумма операции с округлением": 512.95,
+        },
+        {
+            "Дата операции": "02.06.2018 14:07:54",
+            "Дата платежа": "05.06.2018",
+            "Номер карты": "*4556",
+            "Статус": "OK",
+            "Сумма операции": -164.0,
+            "Валюта операции": "RUB",
+            "Сумма платежа": -164.0,
+            "Валюта платежа": "RUB",
+            "Кэшбэк": 1.0,
+            "Категория": "Ж/д билеты",
+            "MCC": 4111.0,
+            "Описание": "Северо-Западная пригородная пассажирская компания",
+            "Бонусы (включая кэшбэк)": 1,
+            "Округление на инвесткопилку": 0,
+            "Сумма операции с округлением": 164.0,
+        },
+    ]
     # print(get_date_from_transactions())
-    # print(get_greeting())
-    # print(get_transactions_from_file())
-    print(get_number_of_card_amount_cashback(get_transactions_from_file()))
+    # print(get_greeting("06.06.2018 20:52:16"))
+    # print(get_transactions_from_file("06.06.2018 20:52:16"))
+    # print(get_number_of_card_amount_cashback(get_transactions_from_file("06.06.2018 20:52:16")))
     # print(get_last_date_of_period())
-    # print(get_top_5_of_transactions(get_transactions_from_file()))
+    print(get_top_5_of_transactions(data_trans))
     # print(get_currency_rate())
     # print(get_stocks_price())

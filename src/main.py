@@ -19,16 +19,16 @@ def get_all_results_from_widget():
     # Генерируем отчеты с данными за 3 месяца и выводим их в JSON-файлы
     transactions_df = get_transactions_from_xlsx()
 
-    report = generate_report(transactions_df, "Супермаркеты", "30.12.2021 19:06:39")
+    generate_report(transactions_df, "Супермаркеты", "30.12.2021 19:06:39")
     result_of_generate_report = "Стандартный отчет записан в report.json"
 
-    my_report = generate_my_report(transactions_df, "Супермаркеты", "30.12.2021 19:06:39")
+    generate_my_report(transactions_df, "Супермаркеты", "30.12.2021 19:06:39")
     result_of_generate_my_report = "Отчет записан в выбранный пользователем файл my_report.json"
 
     print(
         """
-    JSON-ответ с приветствием, данными по картам, 
-    топ-5 транзакций по сумме платежа, курс валют, 
+    JSON-ответ с приветствием, данными по картам,
+    топ-5 транзакций по сумме платежа, курс валют,
     стоимость акций\n
     """,
         main_json,
@@ -41,14 +41,14 @@ def get_all_results_from_widget():
     )
     print(
         """
-        Вывод отчета по тратам по заданной категории 
+        Вывод отчета по тратам по заданной категории
         за последние три месяца в файл report.json\n
         """,
         result_of_generate_report,
     )
     print(
         """
-        Вывод отчета по тратам по заданной категории 
+        Вывод отчета по тратам по заданной категории
         за последние три месяца в файл my_report.json\n
         """,
         result_of_generate_my_report,
