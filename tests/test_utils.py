@@ -45,12 +45,12 @@ def test_get_bad_date_for_greeting(bad_date):
         get_greeting(bad_date)
 
 
-@patch("utils.get_transactions_xlsx")
-def test_get_transactions_from_file(mock_get_transactions_xlsx, mock_transactions_for_period):
+@patch("utils.get_transactions_from_xlsx")
+def test_get_transactions_from_file(mock_get_transactions_from_xlsx, mock_transactions_for_period):
     """
     Тестируем получение списка транзакций за выбранный период
     """
-    mock_get_transactions_xlsx.return_value = mock_transactions_for_period
+    mock_get_transactions_from_xlsx.return_value = mock_transactions_for_period
 
     result = get_transactions_from_file("03.06.2018 10:23:52")
 
@@ -91,6 +91,8 @@ def test_get_transactions_from_file(mock_get_transactions_xlsx, mock_transaction
         },
     ]
 
+    # assert result == expected_result
+
     for index, item in enumerate(expected_result):
         if np.isnan(item["Кэшбэк"]):
             assert np.isnan(result[index]["Кэшбэк"])  # проверка на nan
@@ -98,18 +100,23 @@ def test_get_transactions_from_file(mock_get_transactions_xlsx, mock_transaction
             assert item["Кэшбэк"] == result[index]["Кэшбэк"]
 
 
-# @patch("get_from_csv_xlsx.get_transactions_xlsx")
-# def test_get_empty_transactions_from_file(mock_get_transactions_xlsx):
+# @patch("utils.get_transactions_from_xlsx")
+# def test_get_empty_transactions_from_file(mock_get_transactions_from_xlsx, mock_empty_transactions_for_period):
 #     """
 #     Тестируем обработку пустого списка транзакций за выбранный период
 #     """
-#     mock_get_transactions_xlsx.return_value = []
+#     mock_get_transactions_from_xlsx.return_value = mock_empty_transactions_for_period
 #
-#     result = get_transactions_from_file("03.05.2018 10:23:52")
+#     result = get_transactions_from_file("03.06.2018 10:23:52")
 #
-#     expected_result = []
-#     assert result == expected_result
-#     mock_get_transactions_xlsx.assert_called_once()
+#     assert result == []
+
+# with patch("utils.get_transactions_from_xlsx") as mock_get_transactions_from_xlsx:
+#     mock_get_transactions_from_xlsx.return_value = mock_empty_transactions_for_period
+#     print(mock_get_transactions_from_xlsx.return_value)
+#     result = get_transactions_from_file("03.06.2018 10:23:52")
+#     print(result)
+#     assert result == []
 
 
 def test_get_number_of_card_amount_cashback(mock_transactions_for_period):

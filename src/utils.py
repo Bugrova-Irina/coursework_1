@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 import requests
@@ -55,6 +56,16 @@ def get_greeting(date):
         raise ValueError(f"Задана некорректная дата: {ex}")
 
 
+def get_transactions_from_xlsx(df: str) -> list[dict[str, Any]]:
+    """Считывание финансовых операций из xlsx-файла"""
+    try:
+        transactions = pd.read_excel(df)
+        result = transactions.to_dict(orient="records")
+        return result
+    except Exception as ex:
+        return f"Произошла ошибка {ex}"
+
+
 def get_transactions_from_file(last_date):
     """Получает список транзакций за выбранный период"""
 
@@ -63,8 +74,13 @@ def get_transactions_from_file(last_date):
     first_date = "".join(date_list)
     # print(date_of_first_transaction)
 
-    transactions = get_transactions_xlsx("../coursework_1/data/operations.xlsx")
+    transactions = get_transactions_from_xlsx("../coursework_1/data/operations.xlsx")
     # print(transactions)
+
+    if not isinstance(transactions, list):
+        logger.warning("Нет данных для вывода")
+        return []
+
     transactions_list = []
     try:
         first_date = datetime.strptime(first_date, "%d.%m.%Y %H:%M:%S")
@@ -379,9 +395,9 @@ if __name__ == "__main__":
     ]
     # print(get_date_from_transactions())
     # print(get_greeting("06.06.2018 20:52:16"))
-    # print(get_transactions_from_file("06.06.2018 20:52:16"))
+    print(get_transactions_from_file("06.06.2018 20:52:16"))
     # print(get_number_of_card_amount_cashback(get_transactions_from_file("06.06.2018 20:52:16")))
     # print(get_last_date_of_period())
-    print(get_top_5_of_transactions(data_trans))
+    # print(get_top_5_of_transactions(data_trans))
     # print(get_currency_rate())
     # print(get_stocks_price())

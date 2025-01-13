@@ -146,7 +146,7 @@ def generate_my_report(transactions: pd.DataFrame, category: str, end_date: Opti
 
 if __name__ == "__main__":
     # print(get_transactions_xlsx())
-    # print(get_spending_by_categories(get_transactions_xlsx(), "Супермаркеты", "30.12.2021 19:06:39"))
+    # print(get_spending_by_categories(get_transactions_from_xlsx(), "Супермаркеты", "30.12.2021 19:06:39"))
     transactions_df = get_transactions_from_xlsx()
 
     report = generate_report(transactions_df, "Супермаркеты", "30.12.2021 19:06:39")
